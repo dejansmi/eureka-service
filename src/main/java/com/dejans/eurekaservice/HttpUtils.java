@@ -3,13 +3,6 @@ package com.dejans.eurekaservice;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
-
-import javax.ws.rs.QueryParam;
-
-import org.springframework.util.StringUtils;
-import org.springframework.web.util.UriUtils;
-
 
 public class HttpUtils {
     private String url = new String();
@@ -113,34 +106,86 @@ public class HttpUtils {
         return this;
     }
 
+    public HttpUtils addParamToQuery(String param, long value) throws UnsupportedEncodingException {
+        String paramValue = new String();
+        addParamToQuery(param, String.valueOf(value));
+        return this;
+    }
+
     public String getParamName() throws UnsupportedEncodingException {
         int i;
         String param;
-        if (queryPosition >= query.length()) return null;
-        i = query.indexOf('&',queryPosition);
+        if (queryPosition >= query.length())
+            return null;
+        i = query.indexOf('&', queryPosition);
         if (i > -1) {
-            param = query.substring(queryPosition,i);
+            param = query.substring(queryPosition, i);
         } else {
             param = query.substring(queryPosition);
         }
         int j = param.indexOf('=');
-        if (j> -1) {
-            currentParamQueryName = param.substring(0,j);
-            currentParamQueryValue = URLDecoder.decode(URLDecoder.decode(param.substring(j+1),"UTF-8"),"UTF-8");
+        if (j > -1) {
+            currentParamQueryName = param.substring(0, j);
+            currentParamQueryValue = URLDecoder.decode(URLDecoder.decode(param.substring(j + 1), "UTF-8"), "UTF-8");
         } else {
             currentParamQueryName = param;
-            currentParamQueryValue = "";            
+            currentParamQueryValue = "";
         }
         queryPosition = i + 1;
         return currentParamQueryName;
     }
 
-    public String getParamValue(String nameParam){
-        if (currentParamQueryName.equals(nameParam)) {
-            return currentParamQueryValue; 
+    // Return:
+    //  null - parameter with name nameParam not exists
+    //  ""  - parameter exist but value don't
+    //  value - parameter exist and also value (param=value)
+    public String getParamValue(String nameParam) throws UnsupportedEncodingException {
+        String value = new String();
+        int equal;
+        int ampersand;
+
+        if (query.startsWith(nameParam)) {
+            // param is on the begining 
+            equal = query.indexOf('=');
+            ampersand = query.indexOf('&');
         } else {
-            return "";
+            int paramInd = query.indexOf("&" + nameParam);
+            if (paramInd > -1) {
+                equal = query.indexOf('=', paramInd + 1);
+                ampersand = query.indexOf('&', paramInd + 1);
+            } else {
+                // parameter with name paramName don't exists so return null
+                return null;
+            }
+
         }
+        if (equal == -1 && ampersand == -1) {
+            // this is only one param but don't have value. This means result is empty string
+            return "";
+        } else if (equal == -1 && ampersand > -1) {
+            // param isn't alone but value is empty string 
+            return "";
+        } else if (equal > -1 && ampersand == -1) {
+            // value exist but param is until end of string
+            if (query.length() == equal) {
+                // = is end of stirng so value is "" also 
+                // situation is param=
+                return "";
+            } else {
+                // situation is param=value
+                value = query.substring(equal + 1);
+            }
+        } else if (equal > ampersand) {
+            // situation is param&param2=vallue2
+            // this means that value is empty
+            return "";
+        } else {
+            // here is ampersend > equal
+            // situation is param=value&param2=value2
+            value = query.substring(equal + 1, ampersand);
+        }
+
+        return URLDecoder.decode(URLDecoder.decode(value, "UTF-8"), "UTF-8");
     }
 
     // this method will be used if you want to clear existing query and start buld a new
