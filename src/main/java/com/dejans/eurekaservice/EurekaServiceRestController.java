@@ -20,9 +20,9 @@ class EurekaServiceRestController {
 	public String setport(HttpServletRequest req) throws UnsupportedEncodingException {
 		HttpUtils hUtils = new HttpUtils(req.getRequestURL().toString(), req.getQueryString().toString());
 		String clientName = hUtils.getParamValue("clientName");
-		String XZ = hUtils.getParamValue("XZ");
 		int pid = Integer.parseInt(hUtils.getParamValue("pid"));
 		int port = PortManagment.setPortForClient(clientName, pid);
+		
 		JsonObjectBuilder jsonBuilder = Json.createObjectBuilder();
 		jsonBuilder.add ("port",port);
 		jsonBuilder.add ("clientName", clientName);
